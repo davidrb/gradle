@@ -51,4 +51,16 @@ class BuildEnvironmentCrossVersionSpec extends ToolingApiSpecification {
         buildEnvironment?.environmentVariables == ["var": "val"]
     }
 
+    @ToolingApiVersion(">=3.4")
+    @TargetGradleVersion("3.3")
+    def "long running operation should fail when environment vars specified but not supported by target"() {
+        when:
+        BuildEnvironment buildEnvironment = withConnection {
+            def model = it.model(BuildEnvironment.class)
+            model.setEnvironmentVariables(["var": "val"])
+        }
+
+        then:
+        thrown RuntimeException
+    }
 }

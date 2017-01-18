@@ -40,6 +40,7 @@ import org.gradle.launcher.daemon.configuration.DaemonParameters;
 import org.gradle.launcher.exec.BuildActionExecuter;
 import org.gradle.launcher.exec.BuildActionParameters;
 import org.gradle.process.internal.streams.SafeStreams;
+import org.gradle.tooling.UnsupportedVersionException;
 import org.gradle.tooling.internal.build.DefaultBuildEnvironment;
 import org.gradle.tooling.internal.consumer.parameters.FailsafeBuildProgressListenerAdapter;
 import org.gradle.tooling.internal.consumer.versioning.ModelMapping;
@@ -105,12 +106,12 @@ public class ProviderConnection {
                 throw new IllegalArgumentException("Cannot run tasks and fetch the build environment model.");
             }
             return new DefaultBuildEnvironment(
-                    new DefaultBuildIdentifier(providerParameters.getProjectDir()),
-                    params.gradleUserhome,
-                    GradleVersion.current().getVersion(),
-                    params.daemonParams.getEffectiveJvm().getJavaHome(),
-                    params.daemonParams.getEffectiveJvmArgs(),
-                    params.daemonParams.getEnvironmentVariables());
+                new DefaultBuildIdentifier(providerParameters.getProjectDir()),
+                params.gradleUserhome,
+                GradleVersion.current().getVersion(),
+                params.daemonParams.getEffectiveJvm().getJavaHome(),
+                params.daemonParams.getEffectiveJvmArgs(),
+                params.daemonParams.getEnvironmentVariables());
         }
 
         StartParameter startParameter = new ProviderStartParameterConverter().toStartParameter(providerParameters, params.properties);
@@ -189,14 +190,21 @@ public class ProviderConnection {
         if (jvmArguments != null) {
             daemonParams.setJvmArgs(jvmArguments);
         }
+
         try {
             Map<String, String> envVariables = operationParameters.getEnvironmentVariables();
             if (envVariables != null) {
-                daemonParams.setEnvironmentVariables(envVariables);
+                try {
+                    daemonParams.setEnvironmentVariables(envVariables);
+                } catch (UnsupportedMethodException e) {
+                    LOGGER.error("Setting environment variables is not supported by target Gradle instance", e);
+                    throw new UnsupportedVersionException("Setting environment variables is not supported by target Gradle instance", e);
+                }
             }
-        } catch (UnsupportedMethodException e) {
-            LOGGER.warn("Unable to set environment variables", e);
+        } catch (UnsupportedMethodException ume) {
+            LOGGER.info("Handling environment variables is not supported by target Gradle instance");
         }
+
         File javaHome = operationParameters.getJavaHome();
         if (javaHome != null) {
             daemonParams.setJvm(Jvm.forHome(javaHome));
