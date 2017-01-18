@@ -218,7 +218,7 @@ public class NativeServices extends DefaultServiceRegistry implements ServiceReg
     }
 
     protected FileMetadataAccessor createFileMetadataAccessor(OperatingSystem operatingSystem) {
-        if (operatingSystem.isMacOsX() && useNativeIntegrations) {
+        if ((operatingSystem.isMacOsX() || operatingSystem.isLinux()) && useNativeIntegrations) {
             try {
                 return new NativePlatformBackedFileMetadataAccessor(net.rubygrapefruit.platform.Native.get(Files.class));
             } catch (NativeIntegrationUnavailableException e) {
